@@ -4,6 +4,36 @@ import { webhookRouter } from './routes/webhook.route';
 import { reminderJob } from './jobs/reminder.job';
 import { db } from './config/database';
 
+import fs from 'fs';
+import path from 'path';
+//import { db } from './config/database';
+
+async function runMigrations(): Promise<void> {
+  try {
+    console.log('🔄 Running migrations...');
+    const migrationPath = path.join(__dirname, '..', 'migrations', '001_initial_schema.sql');
+    const sql = fs.readFileSync(migrationPath, 'utf-8');
+    await db.query(sql);
+    console.log('✅ Migrations completed!');
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    throw error;
+  }
+}
+
+// In your app startup:
+async function bootstrap() {
+  await runMigrations();
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    reminderJob.start();
+  });
+}
+
+bootstrap();
+
+
 dotenv.config();
 
 const app = express();
